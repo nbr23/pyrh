@@ -608,17 +608,27 @@ class Robinhood(InstrumentManager, SessionManager):
 
         return self.get(urls.PORTFOLIOS, schema=PortfolioSchema())
 
-    def order_history(self, orderId=None):
+    def order_history(self, orderId=None, url=None):
         """Wrapper for portfolios
 
-        Optional Args: add an order ID to retrieve information about a single order.
+        Optional Args:
+            orderId: add an order ID to retrieve information about a single order.
+            url: specific url to use (used for recursion through pagination)
 
         Returns:
-            (:obj:`dict`): JSON dict from getting orders
+            (:obj:`list`): list of JSON dicts describing orders
 
         """
 
-        return self.get(urls.build_orders(orderId))
+        json = None
+        if url:
+            json = self.get(url)
+        else:
+            json = self.get(urls.build_orders(orderId))
+        next_url = json['next']
+        if next_url:
+            return json['results'] + self.order_history(orderId, next_url)
+        return json['results']
 
     def dividends(self):
         """Wrapper for portfolios
